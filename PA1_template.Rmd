@@ -5,14 +5,67 @@ output:
     keep_md: true
 ---
 
+## Introduction
+This document contains the **Reproducible Research** assignment for Week #2 at **John Hopkins University**'s DataScience course.
 
 ## Loading and preprocessing the data
+The DataSet is provided in a ZIP file. The first task consists in decompress the file, load the DataSet and prepare the data.
 
+```{r load-data, cache=TRUE}
+# Unzip the file
+unzip( "activity.zip" )
+
+# DataSet load
+activity_data <- read.csv( "activity.csv" )
+```
+
+
+The `interval` column must be interpreted as a *factor* instead of an integer.
+
+```{r transcform-data, cache=TRUE}
+# Convert 'interval' to factor
+activity_data[,'interval'] <- factor( activity_data[,'interval'] )
+```
+
+
+We will keep the original DataSet in the `activity_data` DataFrame and a clean set (without 'NA' values) in the `complete_data` DataFrame.
+
+```{r clean-data, cache=TRUE}
+# Remove the NA entries
+complete_dataset <- activity_data[ complete.cases( activity_data ), ]
+```
 
 
 ## What is mean total number of steps taken per day?
 
+Let's plot a histogram about the daily steps.
 
+```{r steps-by-day-histogram, cache=TRUE}
+# Aggregate the steps (by day)
+steps_by_day <- aggregate( steps ~ date, complete_dataset, FUN=sum )
+
+# Plot a histogram (steps by day) using the complete dataset
+hist(steps_by_day$steps,
+     main="Steps by day (histogram)",
+     xlab="Steps",
+     breaks=10,
+     col="grey")
+```
+
+Now let's get the Mean and Median.
+
+```{r mean-median, cache=TRUE}
+# Compute the data summary
+steps_by_day_summary <- summary( steps_by_day$steps )
+
+# The mean
+steps_by_day_mean <- steps_by_day_summary["Mean"]
+
+# The median
+steps_by_day_median <- steps_by_day_summary["Median"]
+```
+
+The **Mean** is **`r toString(as.integer(steps_by_day_mean))`** and the **Median** **`r toString(steps_by_day_median)`**.
 
 ## What is the average daily activity pattern?
 
