@@ -65,14 +65,179 @@ steps_by_day_mean <- steps_by_day_summary["Mean"]
 steps_by_day_median <- steps_by_day_summary["Median"]
 ```
 
-The **Mean** is **`r toString(as.integer(steps_by_day_mean))`** and the **Median** **`r toString(steps_by_day_median)`**.
+The results:
+
+| Mean | Median| 
+| --- | ---| 
+| `r toString(as.integer(steps_by_day_mean))` | `r toString(steps_by_day_median)`|
+
 
 ## What is the average daily activity pattern?
 
+In order to determine which 5-minute period contains the maximum number of steps,
+we will plot the average number or steps (across all days).
+
+```{r activity-pattern-plot, cache=TRUE}
+
+# Aggregate the steps by interval
+mean_steps_by_inteval <- aggregate( steps ~ interval, complete_dataset, FUN=mean )
+
+# Plot
+plot( x=mean_steps_by_inteval$interval,
+      y=mean_steps_by_inteval$steps,
+      type="l",
+      col="blue",
+      main="Steps by 5-minute interval",
+      xlab="Interval",
+      ylab="Steps")
+
+```
+
+Let's look for the highest number of steps interval:
+
+```{r max-interval, cache=TRUE}
+# The row with the maximum steps
+max_interval <- mean_steps_by_inteval[ which.max( mean_steps_by_inteval$steps ), ]
+
+```
+
+| Maximum interval | Maximum value | 
+| --- | ---| 
+| `r toString(max_interval$interval)` | `r toString(max_interval$steps)`|
 
 
 ## Imputing missing values
 
+#### Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 
+We can just sum all the NAs with:
+
+```{r total-number-of-NAs, cache=TRUE}
+
+# Sum of NAs
+na_count <- sum( is.na( activity_data$steps ) )
+
+```
+
+| Data entries with NAs |
+| --- |
+| `r toString( na_count )` |
+
+
+#### Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+We will fill the NA values with the mean steps for the 5-minute interval.
+
+We use the `mean_steps_by_interval` dataframe that contains the desired values.
+
+
+#### Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+First, we duplicate the activity dataset, and then we will replace the NA values
+with the correspondent value in the `mean_steps_by_interval` dataset.
+
+```{r fill-na-values, cache=TRUE}
+
+# Duplicate the data set
+filled_data = activity_data
+
+# With a little help of StackOverflow:
+# https://stackoverflow.com/questions/13234005/filling-missing-values
+filled_data$steps[ is.na( filled_data$steps ) ] <- mean_steps_by_inteval$steps[
+                            which( is.na( filled_data$steps ), arr.ind=TRUE ) ]
+
+```
+
+
+
+#### Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+Let's plot again the histogram.
+
+```{r steps-by-day-2-histogram, cache=TRUE}
+# Aggregate the steps (by day)
+filled_steps_by_day <- aggregate( steps ~ date, filled_data, FUN=sum )
+
+
+# Plot a histogram (steps by day) using the complete dataset
+hist(filled_steps_by_day$steps,
+     main="Steps by day - filled data (histogram)",
+     xlab="Steps",
+     breaks=10,
+     col="grey")
+```
+
+
+Now let's calculate the Mean and Median.
+
+```{r filled-mean-median, cache=TRUE}
+# Compute the data summary
+filled_steps_by_day_summary <- summary( filled_steps_by_day$steps )
+
+# The mean
+filled_steps_by_day_mean <- filled_steps_by_day_summary["Mean"]
+
+# The median
+filled_steps_by_day_median <- filled_steps_by_day_summary["Median"]
+```
+
+The results:
+
+| Data-Set | Mean | Median | 
+| ----- | ----- | ----- |
+| Original | `r toString(as.integer(steps_by_day_mean))` | `r toString(steps_by_day_median)` |
+| Filled | `r toString(as.integer(filled_steps_by_day_mean))` | `r toString(as.integer(filled_steps_by_day_median))` |
+
+We observe that filling the missing values with the interval mean doesn't affect
+to the daily mean.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+#### Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+First, we must convert the `date` factor to a `Date` type.
+
+```{r date-conversion, cache=TRUE}
+
+# Convert activity dates to "Dates"
+activity_data$date <- as.Date( activity_data$date, format="%Y-%m-%d" )
+
+```
+
+Now we obtain the "day of the week" and obtain the `weekend`/`weekday` using
+this value (my computer settings as LANG=es_ES so the `weekdays` command
+return spanish day names: it's better to use the week day number).
+
+```{r day-of-the-week, cache=TRUE}
+
+# Obtain the days of the week
+day_of_weeks <- as.POSIXlt( activity_data$date )$wday
+
+# Identify weekends
+weekends_factor <- as.factor( (day_of_weeks<1 | day_of_weeks>5) )
+
+# Change the factor (now it's TRUE/FALSE)
+levels( weekends_factor )[ levels( weekends_factor ) == TRUE  ] <- "weekend"
+levels( weekends_factor )[ levels( weekends_factor ) == FALSE ] <- "weekday"
+
+# Join the dataset
+activity_data$weekday <- weekends_factor
+
+```
+
+
+
+#### Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+
+Finally, the graphs:
+
+```{r weekday-plots, cache=TRUE}
+
+par( mfrow=c(1,2) )
+
+plot()
+
+```
+
+
