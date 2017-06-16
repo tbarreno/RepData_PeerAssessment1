@@ -11,7 +11,7 @@ This document contains the **Reproducible Research** assignment for Week #2 at *
 ## Loading and preprocessing the data
 The DataSet is provided in a ZIP file. The first task consists in decompress the file, load the DataSet and prepare the data.
 
-```{r load-data, cache=TRUE}
+```{r load-data}
 # Unzip the file
 unzip( "activity.zip" )
 
@@ -19,18 +19,9 @@ unzip( "activity.zip" )
 activity_data <- read.csv( "activity.csv" )
 ```
 
-
-The `interval` column must be interpreted as a *factor* instead of an integer.
-
-```{r transcform-data, cache=TRUE}
-# Convert 'interval' to factor
-activity_data[,'interval'] <- factor( activity_data[,'interval'] )
-```
-
-
 We will keep the original DataSet in the `activity_data` DataFrame and a clean set (without 'NA' values) in the `complete_data` DataFrame.
 
-```{r clean-data, cache=TRUE}
+```{r clean-data}
 # Remove the NA entries
 complete_dataset <- activity_data[ complete.cases( activity_data ), ]
 ```
@@ -40,7 +31,7 @@ complete_dataset <- activity_data[ complete.cases( activity_data ), ]
 
 Let's plot a histogram about the daily steps.
 
-```{r steps-by-day-histogram, cache=TRUE}
+```{r steps-by-day-histogram}
 # Aggregate the steps (by day)
 steps_by_day <- aggregate( steps ~ date, complete_dataset, FUN=sum )
 
@@ -54,7 +45,7 @@ hist(steps_by_day$steps,
 
 Now let's get the Mean and Median.
 
-```{r mean-median, cache=TRUE}
+```{r mean-median}
 # Compute the data summary
 steps_by_day_summary <- summary( steps_by_day$steps )
 
@@ -77,14 +68,14 @@ The results:
 In order to determine which 5-minute period contains the maximum number of steps,
 we will plot the average number or steps (across all days).
 
-```{r activity-pattern-plot, cache=TRUE}
+```{r activity-pattern-plot}
 
 # Aggregate the steps by interval
-mean_steps_by_inteval <- aggregate( steps ~ interval, complete_dataset, FUN=mean )
+mean_steps_by_interval <- aggregate( steps ~ interval, complete_dataset, FUN=mean )
 
 # Plot
-plot( x=mean_steps_by_inteval$interval,
-      y=mean_steps_by_inteval$steps,
+plot( x=mean_steps_by_interval$interval,
+      y=mean_steps_by_interval$steps,
       type="l",
       col="blue",
       main="Steps by 5-minute interval",
@@ -95,9 +86,9 @@ plot( x=mean_steps_by_inteval$interval,
 
 Let's look for the highest number of steps interval:
 
-```{r max-interval, cache=TRUE}
+```{r max-interval}
 # The row with the maximum steps
-max_interval <- mean_steps_by_inteval[ which.max( mean_steps_by_inteval$steps ), ]
+max_interval <- mean_steps_by_interval[ which.max( mean_steps_by_interval$steps ), ]
 
 ```
 
@@ -112,7 +103,7 @@ max_interval <- mean_steps_by_inteval[ which.max( mean_steps_by_inteval$steps ),
 
 We can just sum all the NAs with:
 
-```{r total-number-of-NAs, cache=TRUE}
+```{r total-number-of-NAs}
 
 # Sum of NAs
 na_count <- sum( is.na( activity_data$steps ) )
@@ -136,14 +127,14 @@ We use the `mean_steps_by_interval` dataframe that contains the desired values.
 First, we duplicate the activity dataset, and then we will replace the NA values
 with the correspondent value in the `mean_steps_by_interval` dataset.
 
-```{r fill-na-values, cache=TRUE}
+```{r fill-na-values}
 
 # Duplicate the data set
 filled_data = activity_data
 
 # With a little help of StackOverflow:
 # https://stackoverflow.com/questions/13234005/filling-missing-values
-filled_data$steps[ is.na( filled_data$steps ) ] <- mean_steps_by_inteval$steps[
+filled_data$steps[ is.na( filled_data$steps ) ] <- mean_steps_by_interval$steps[
                             which( is.na( filled_data$steps ), arr.ind=TRUE ) ]
 
 ```
@@ -154,10 +145,9 @@ filled_data$steps[ is.na( filled_data$steps ) ] <- mean_steps_by_inteval$steps[
 
 Let's plot again the histogram.
 
-```{r steps-by-day-2-histogram, cache=TRUE}
+```{r steps-by-day-2-histogram}
 # Aggregate the steps (by day)
 filled_steps_by_day <- aggregate( steps ~ date, filled_data, FUN=sum )
-
 
 # Plot a histogram (steps by day) using the complete dataset
 hist(filled_steps_by_day$steps,
@@ -170,7 +160,7 @@ hist(filled_steps_by_day$steps,
 
 Now let's calculate the Mean and Median.
 
-```{r filled-mean-median, cache=TRUE}
+```{r filled-mean-median}
 # Compute the data summary
 filled_steps_by_day_summary <- summary( filled_steps_by_day$steps )
 
@@ -198,7 +188,7 @@ to the daily mean.
 
 First, we must convert the `date` factor to a `Date` type.
 
-```{r date-conversion, cache=TRUE}
+```{r date-conversion}
 
 # Convert activity dates to "Dates"
 activity_data$date <- as.Date( activity_data$date, format="%Y-%m-%d" )
@@ -209,7 +199,7 @@ Now we obtain the "day of the week" and obtain the `weekend`/`weekday` using
 this value (my computer settings as LANG=es_ES so the `weekdays` command
 return spanish day names: it's better to use the week day number).
 
-```{r day-of-the-week, cache=TRUE}
+```{r day-of-the-week }
 
 # Obtain the days of the week
 day_of_weeks <- as.POSIXlt( activity_data$date )$wday
@@ -230,14 +220,45 @@ activity_data$weekday <- weekends_factor
 
 #### Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
 
-Finally, the graphs:
+In order to draw two charts, we will split the data in different data-sets.
 
-```{r weekday-plots, cache=TRUE}
+```{r data-split}
 
-par( mfrow=c(1,2) )
+# Split in two datasets
+weekday_data <- subset(x = activity_data, weekday == "weekday", select = c( "interval", "steps" ))
+weekend_data <- subset(x = activity_data, weekday == "weekend", select = c( "interval", "steps" ))
 
-plot()
+# And now aggregate the data
+weekday_steps_by_inteval <- aggregate( steps ~ interval, weekday_data, FUN=mean )
+weekend_steps_by_inteval <- aggregate( steps ~ interval, weekend_data, FUN=mean )
+
+# ...and join in a single data-frame
+weekday_steps_by_inteval$weekday <- as.factor( "weekday" )
+weekend_steps_by_inteval$weekday <- as.factor( "weekend" )
+
+week_steps <- rbind( weekday_steps_by_inteval, weekend_steps_by_inteval )
 
 ```
 
 
+Finally, the graphs:
+
+```{r weekday-plots}
+
+# Library load
+library( ggplot2 )
+
+# ...and plot
+ggplot( week_steps,
+  aes( x = interval, steps, colour = weekday ) ) +
+  geom_line() +
+  facet_grid( weekday ~ . )
+
+```
+
+There're some differences between working days and weekend days:
+
+ - On working days, the activity starts early (around 05:30 AM).
+ - On weekends, the activity is more spreaded all over the day.
+ - On working days, activity falls after 07:00 PM (on weekend, it's still significant at 08:00PM)
+ 
